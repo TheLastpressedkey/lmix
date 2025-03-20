@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
@@ -76,8 +76,12 @@ function App() {
             </ProtectedRoute>
           } />
         </Route>
+
+        {/* Redirect /platform to /dashboard for backward compatibility */}
+        <Route path="/platform/*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   );
 }
+
 export default App;
