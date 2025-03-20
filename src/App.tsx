@@ -9,8 +9,9 @@ import { OrderDetails } from './pages/OrderDetails';
 import { EditOrder } from './pages/EditOrder';
 import { Customers } from './pages/Customers';
 import { Users } from './pages/Users';
-import { Documentation } from './pages/Documentation';
+import { Home } from './pages/Home';
 import { TrackOrder } from './pages/TrackOrder';
+import { Documentation } from './pages/Documentation';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuthStore } from './store/authStore';
 import { supabase } from './lib/supabase';
@@ -55,10 +56,14 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        {/* Public routes */}
+        <Route path="/" element={<Home />} />
         <Route path="/track" element={<TrackOrder />} />
+        <Route path="/login" element={<Login />} />
+
+        {/* Protected platform routes */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/new" element={<NewOrder />} />
           <Route path="/orders/:id" element={<OrderDetails />} />
