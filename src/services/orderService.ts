@@ -88,7 +88,6 @@ export const orderService = {
 
   async updateOrder(id: string, updates: Partial<Order>): Promise<Order> {
     try {
-      // Effectuer la mise à jour
       const { error: updateError } = await supabase
         .from('orders')
         .update(updates)
@@ -96,7 +95,6 @@ export const orderService = {
 
       if (updateError) throw updateError;
 
-      // Récupérer la commande mise à jour
       const { data, error: fetchError } = await supabase
         .from('orders')
         .select(`
@@ -126,12 +124,21 @@ export const orderService = {
 
   async deleteOrder(id: string): Promise<void> {
     try {
-      const { error } = await supabase
+      // Supprimer d'abord l'historique des commandes
+      const { error: historyError } = await supabase
+        .from('order_history')
+        .delete()
+        .eq('order_id', id);
+
+      if (historyError) throw historyError;
+
+      // Puis supprimer la commande
+      const { error: orderError } = await supabase
         .from('orders')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (orderError) throw orderError;
     } catch (error) {
       console.error('Error in deleteOrder:', error);
       throw error;
