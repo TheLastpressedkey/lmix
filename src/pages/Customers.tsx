@@ -2,20 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { UserPlus, Search, Package, Edit, Trash2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { customerService } from '../services/customerService';
 import type { Customer } from '../types';
 
-export function Customers() {
+function Customers() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [newCustomer, setNewCustomer] = useState({
     first_name: '',
     last_name: '',
@@ -31,16 +31,12 @@ export function Customers() {
   const loadCustomers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setCustomers(data || []);
+      setError(null);
+      const data = await customerService.getAllCustomers();
+      setCustomers(data);
     } catch (err) {
       console.error('Error loading customers:', err);
-      setError('Erreur lors du chargement des clients');
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue lors du chargement des clients');
     } finally {
       setLoading(false);
     }
@@ -54,18 +50,10 @@ export function Customers() {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
-        .from('customers')
-        .insert([
-          {
-            ...newCustomer,
-            created_by: user.id
-          }
-        ])
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await customerService.createCustomer({
+        ...newCustomer,
+        created_by: user.id
+      });
 
       setCustomers([data, ...customers]);
       setShowAddModal(false);
@@ -78,7 +66,7 @@ export function Customers() {
       });
     } catch (err) {
       console.error('Error adding customer:', err);
-      setError('Erreur lors de l\'ajout du client');
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue lors de l\'ajout du client');
     } finally {
       setLoading(false);
     }
@@ -86,33 +74,28 @@ export function Customers() {
 
   const handleEditCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !selectedCustomer) return;
+    if (!selectedCustomer) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      const { error } = await supabase
-        .from('customers')
-        .update({
-          first_name: selectedCustomer.first_name,
-          last_name: selectedCustomer.last_name,
-          email: selectedCustomer.email,
-          phone: selectedCustomer.phone,
-          address: selectedCustomer.address
-        })
-        .eq('id', selectedCustomer.id);
-
-      if (error) throw error;
+      const updatedCustomer = await customerService.updateCustomer(selectedCustomer.id, {
+        first_name: selectedCustomer.first_name,
+        last_name: selectedCustomer.last_name,
+        email: selectedCustomer.email,
+        phone: selectedCustomer.phone,
+        address: selectedCustomer.address
+      });
 
       setCustomers(customers.map(c => 
-        c.id === selectedCustomer.id ? selectedCustomer : c
+        c.id === selectedCustomer.id ? updatedCustomer : c
       ));
       setShowEditModal(false);
       setSelectedCustomer(null);
     } catch (err) {
       console.error('Error updating customer:', err);
-      setError('Erreur lors de la modification du client');
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue lors de la modification du client');
     } finally {
       setLoading(false);
     }
@@ -125,19 +108,14 @@ export function Customers() {
       setLoading(true);
       setError(null);
 
-      const { error } = await supabase
-        .from('customers')
-        .delete()
-        .eq('id', selectedCustomer.id);
-
-      if (error) throw error;
+      await customerService.deleteCustomer(selectedCustomer.id);
 
       setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
       setShowDeleteModal(false);
       setSelectedCustomer(null);
     } catch (err) {
       console.error('Error deleting customer:', err);
-      setError('Erreur lors de la suppression du client');
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue lors de la suppression du client');
     } finally {
       setLoading(false);
     }
@@ -519,3 +497,7 @@ export function Customers() {
     </div>
   );
 }
+
+export default Customers;
+
+export { Customers }
