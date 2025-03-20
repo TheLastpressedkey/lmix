@@ -29,7 +29,8 @@ export function Login() {
       return;
     }
 
-    navigate('/');
+    // Rediriger vers le tableau de bord après la connexion
+    navigate('/dashboard');
   };
 
   return (
